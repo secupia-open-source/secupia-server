@@ -120,4 +120,4 @@ STATICFILES_DIRS = (
 )
 
 # Added for Heroku Setup
-STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
