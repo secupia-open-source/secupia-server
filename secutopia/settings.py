@@ -70,7 +70,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'secutopia.wsgi.application'
 
 
-if config('SERVER', cast=bool):
+if SERVER:
     DATABASES = {
         'default': dj_database_url.config(
             default=config('DATABASE_URL')
