@@ -12,5 +12,6 @@ data/
 *.log
 *.save
 .~*
+.env
 ssms/config.py
 migrations/
