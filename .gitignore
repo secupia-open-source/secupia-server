@@ -1,0 +1,16 @@
+### DIRECTORIES:
+media/
+/static
+.vscode/
+__pycache__/
+data/
+
+### FILES:
+*.pyc
+*_ignore*
+*.sqlite3
+*.log
+*.save
+.~*
+ssms/config.py
+migrations/
