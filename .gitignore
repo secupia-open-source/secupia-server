@@ -12,5 +12,5 @@ data/
 *.log
 *.save
 .~*
-ssms/config.py
+**.DS_Store
 migrations/
