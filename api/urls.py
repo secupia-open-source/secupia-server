@@ -5,15 +5,19 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # Login/Logout
-	path(r'login', obtain_jwt_token, name="logout"),
-    # path(r'logout', views.Logout.as_view(), name="logout"),
+    # Login
+    path(r'login', obtain_jwt_token, name="logout"),
 
+    # Resident Profile Endpoints
+    path(r'resident/profile', views.ResidentProfile.as_view(), name="resident_profile"),
+    
     # Resident Vehile Endpoints
     # path(r'resident/vehicle', views.ResidentVehicle.as_view(), name="resident_vehicle"),
+    path(r'resident/vehicle/<int:vehicle_id>/logs', views.ResidentVehicleLog.as_view(), 
+        name="resident_logs"),
 
     # Guest Endpoints
-    # path(r'resident/guest', views.ResidentGuest.as_view(), name="guest"),
+    path(r'resident/guest', views.ResidentGuestVisit.as_view(), name="guest"),
 ]
 
 

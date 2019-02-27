@@ -1,68 +1,99 @@
+from django.contrib.auth import logout
+
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from api import serializers
+from api.permissions import IsResident
+
 
 class ResidentProfile(APIView):
 
+    permission_classes = (IsAuthenticated, IsResident)
+
     def get(self, request):
         '''Return profile information of Resident'''
-        resident = Resident.objects.get(user=request.user)
-        serializer = ResidentSerializer(resident)
+        print("hello")
+        resident = request.user.profile.resident
+        vehicles = resident.vehicles.all()
 
-        response_data = serializer.data
+        resident_serializer = serializers.ResidentSerializer(resident)
+        vehicle_serializer = serializers.ResidentVehicleSerializer(vehicles, many=True)
+
+        response_data = {
+            "profile": resident_serializer.data,
+            "vehicle": vehicle_serializer.data
+        }
         status_code = status.HTTP_200_OK
-
         return Response(response_data, status_code)
 
 
-#     def post(self, request):
-#         '''Add a new Resident'''
-#         request_data = request.data
+# class ResidentVehicle(APIView):
 
-#         try:
-#             val_data = validate_resident_data(request_data)
-#         except:
-#             pass
-
-#         resident = Resident.objects.create(**val_data)
-#         serializer = ResidentSerializer(resident)
-
-#         response_data = serializer.data
-#         status_code = status.HTTP_200_OK
-
-#         return Response(response_data, status_code)
-
-
-#     def patch(self, request):
-#         '''Update profile information of Resident'''
-#         pass
-
-
-#     def delete(self, request):
-#         '''Delete a Resident'''
-#         pass
-
-
-# class ResidentGuestVisit(APIView):
+#     permission_classes = (IsAuthenticated, IsResident)
 
 #     def get(self, request):
-#         '''Return all Guest visits for a Resident'''
-#         resident = Resident.objects.get(user=request.user)
-#         guest_visits = resident.get_guest_visits()
-#         serializer = GuestVisitSerializer(guest_visits, many=True)
+#         '''Return profile information of Resident'''
+#         resident = request.user.profile.resident
+        
 
 #         response_data = serializer.data
 #         status_code = status.HTTP_200_OK
-
 #         return Response(response_data, status_code)
 
 
-#     def post(self, request):
-#         '''Add a new Guest visit to a Resident'''
-#         pass
+class ResidentVehicleLog(APIView):
 
+    permission_classes = (IsAuthenticated, IsResident)
+
+    def get(self, request, vehicle_id):
+        '''Return profile information of Resident'''
+        resident = request.user.profile.resident
+        
+        vehicle = resident.vehicles.get(id=vehicle_id)
+        serializer = serializers.ResidentVehicleLogSerializer(vehicle.vehicle.transactions, many=True)
+
+        response_data = serializer.data
+        status_code = status.HTTP_200_OK
+        return Response(response_data, status_code)
+
+
+class ResidentGuestVisit(APIView):
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        '''Return all Guest visits for a Resident'''
+        resident = request.user.profile.resident
+
+        guest_visits = resident.get_active_guest_visits()
+        serializer = serializers.GuestVisitSerializer(guest_visits, many=True)
+
+        response_data = serializer.data
+        status_code = status.HTTP_200_OK
+        return Response(response_data, status_code)
+
+
+    def post(self, request):
+        '''Add a new Guest visit to a Resident'''
+        flat = request.user.profile.resident.flat
+
+        data = request.data
+        try:
+            data = validate_guest_visit_data(data)
+        except ValueError:
+            response_data = {'message': "Incorrect values or format"}
+            status_code = status.HTTP_400_BAD_REQUEST
+            return Response(response_data, status_code)
+
+
+        flat.add_guest_visit(data=data)
+
+        response_data = {'message': "Guest added"}
+        status_code = status.HTTP_200_OK
+        return Response(response_data, status_code)
 
 #     def patch(self, request):
 #         '''Update an existing Guest visit to a Resident'''

@@ -1,46 +1,248 @@
-# from __future__ import unicode_literals
+from __future__ import unicode_literals
 
-# from django.contrib.auth.models import User
-# from django.db import models
+from django.contrib.auth.models import User
+from django.db import models
 
-# class Resident(models.Model):
+from api import managers
 
-#     MALE = 'M'
-#     FEMALE = 'F'
-#     OTHERS = 'O'
+class UserProfile(models.Model):
+    '''User Profile model class'''
+    MALE = 'M'
+    FEMALE = 'F'
+    OTHERS = 'O'
 
-#     GENDER = (
-#         (MALE, "Male"),
-#         (FEMALE, "Female"),
-#         (OTHERS, "Others"),
-#     )
+    GENDER = (
+        (MALE, "Male"),
+        (FEMALE, "Female"),
+        (OTHERS, "Others"),
+    )
 
-#     user = models.OneToOneField(User, on_delete=models.CASCADE)
-#     dob = models.DateField()
-#     gender = models.CharField(max_length=1, choices=GENDER, default=MALE)
-#     occupation = models.CharField(max_length=100)
-#     contact = models.PositiveIntegerField()
-#     profile_pic = models.ImageField()
-#     license_num = models.CharField(max_length=10)
-#     # flat = models.ForeignKey('Flat', on_delete=models.CASCADE)
+    user = models.OneToOneField(User, null=True, blank=True, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    email = models.EmailField(null=True, blank=True)
+    gender = models.CharField(max_length=1, choices=GENDER, default=MALE)
+    contact = models.PositiveIntegerField()
+    dob = models.DateField(null=True, blank=True)
+    occupation = models.CharField(max_length=100, null=True, blank=True)
+    profile_pic = models.ImageField(null=True, blank=True)
+    license_num = models.CharField(max_length=10, null=True, blank=True)
 
-#     '''
-#     From User model: first_name, last_name, email
-#     '''
+    class Meta:
+        verbose_name = "User Profile"
+        verbose_name_plural = "User Profiles"
+        default_related_name = "profile"
 
-#     def __str__(self):
-#         return self.get_name()
+    def __str__(self):
+        return "User: {}".format(self.name)
 
-#     def get_name(self):
-#         return self.user.first_name + self.user.last_name
+    def __repr__(self):
+        ret_string = 'UserProfile(name="{}", gender="{}", contact={}'.format(
+                        self.name,
+                        self.gender,
+                        self.contact
+                    )
+        return ret_string
+
+    @property
+    def is_resident(self):
+        try:
+            resident = self.resident
+            if resident.id:
+                return True
+        except (AttributeError, UserProfile.resident.RelatedObjectDoesNotExist):
+            return False
+
+    def is_guest(self):
+        try:
+            guest = self.guest
+            if guest.id:
+                return True
+        except (AttributeError, UserProfile.resident.RelatedObjectDoesNotExist):
+            return False
+
+    @property
+    def owns_flats(self):
+        flats = self.flats.all()
+        if flats.exists():
+            return True
+        else:
+            return False
 
 
-# class Flat(models.Model):
-#     flat_num = models.CharField(max_length=10)
-#     owner = models.ForeignKey(Resident, on_delete=models.SET_NULL)
+class Society(models.Model):
+    '''Society model class'''
+    name = models.CharField(max_length=100)
 
-#     def __str__(self):
-#         return self.flat_num
+    class Meta:
+        verbose_name_plural = "Societies"
+
+    def __str__(self):
+        return "Society: {}".format(self.name)
+
+    def __repr__(self):
+        ret_string = 'Society(name="{}")'.format(self.name)
+        return ret_string
+
+
+class Flat(models.Model):
+    '''Flat model class'''
+    flat = models.CharField(max_length=10)
+    society = models.ForeignKey(Society, on_delete=models.CASCADE)
+    owner = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        default_related_name = "flats"
+
+    def __str__(self):
+        return "{}, Flat: {}".format(self.society, self.flat)
+
+    def __repr__(self):
+        ret_string = 'Flat(flat="{}", society="{}", owner="{}")'.format(
+                        self.flat,
+                        self.society,
+                        self.owner
+                    )
+        return ret_string
+
+    def add_guest_visit(self, **kwargs):
+        if kwargs['data'] is None:
+            raise ValueError
+
+        guest = Guest.objects.get_or_create()
+
+
+class Resident(models.Model):
+    '''Resident model class'''
+    profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
+    flat = models.ForeignKey(Flat, on_delete=models.CASCADE)
+
+    class Meta:
+        default_related_name = "resident"
+
+    def __str__(self):
+        return "Resident: {}".format(self.profile.name)
+
+    def __repr__(self):
+        ret_string = 'Resident(user="{}", flat="{}")'.format(
+                        self.profile,
+                        self.flat
+                    )
+        return ret_string
+
+    def get_active_guest_visits(self):
+        return GuestVisit.objects.active_guest_visits(flat=self.flat)
+
+    def get_addr(self):
+        return "{}, {}".format(self.flat.flat, self.flat.society.name)
+
+
+class Vehicle(models.Model):
+    '''Vehicle model class'''
+    license_plate = models.CharField(max_length=10)
+
+    def __str__(self):
+        return "Vehicle: {}".format(self.license_plate)
+
+    def __repr__(self):
+        ret_string = 'Vehicle(license_plate={})'.format(license_plate)
+
+
+class ResidentVehicle(models.Model):
+    '''Resident Vehicle model class'''
+    vehicle = models.OneToOneField(Vehicle, related_name="resident_vehicle", on_delete=models.CASCADE)
+    owner = models.ForeignKey(Resident, related_name="vehicles", on_delete=models.CASCADE)
+    model = models.CharField(max_length=100)
+    manufacturer = models.CharField(max_length=100)
+
+    def __str__(self):
+        return "{}, {}".format(self.owner, self.vehicle)
+
+    def __repr__(self):
+        ret_string = 'ResidentVehicle(vehicle={}, owner={}, model="{}", manufacturer="{}")'.format(
+                        self.vehicle,
+                        self.owner,
+                        self.model,
+                        self.manufacturer
+                    )
+
+
+class Transaction(models.Model):
+    date_time = models.DateTimeField(auto_now_add=True)
+    vehicle = models.ForeignKey(Vehicle, related_name="transactions", on_delete=models.CASCADE)
+    is_entry = models.BooleanField(default=True) # Categorize whether 
+
+    def __str__(self):
+        if self.is_entry:
+            return "{}, date&time: {}, {}".format(self.vehicle, self.date_time, "Entry")
+        else:
+            return "{}, date&time: {}, {}".format(self.vehicle, self.date_time, "Exit")            
+
+    def __repr__(self):
+        ret_string = 'Transaction(vehicle={}, date_time={}, is_entry={})'.format(
+                        self.vehicle,
+                        self.date_time,
+                        self.is_entry
+                    )
+
+class Guest(models.Model):
+    '''Guest model class'''
+    profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
+
+    objects = managers.GuestQuerySet.as_manager()
+
+    def __str__(self):
+        return self.get_name()
+
+    def __repr__(self):
+        ret_string = 'Guest(user={})'.format(
+                        self.profile
+                    )
+        return ret_string
+
+    def get_name(self):
+        return self.profile.name
+
+
+class Visit(models.Model):
+    '''Visit model class'''
+    PASSIVE = 'P'
+    ACTIVE = 'A'
+
+    STATUS = (
+        (PASSIVE, "Passive"),
+        (ACTIVE, "Active"),
+    )
+
+    purpose = models.CharField(max_length=100)
+    date_time = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=1, choices=STATUS, default=ACTIVE)
+
+    class Meta:
+        abstract = True
+
+
+class GuestVisit(Visit):
+    '''Guest Visit model class'''
+    guest = models.ForeignKey(Guest, on_delete=models.CASCADE)
+    flat = models.ForeignKey(Flat, on_delete=models.CASCADE)
+
+    objects = managers.GuestVisitQuerySet.as_manager()
+
+    class Meta:
+        verbose_name = "Guest Visit"
+        default_related_name = "guest_visit"
+
+    def __str__(self):
+        return "{}, Purpose: {}".format(self.guest.profile.name, self.purpose)
+
+    def __repr__(self):
+        ret_string = 'GuestVisit(guest={}, flat={}, purpose="{}", date_time={})'.format(
+                        self.guest.profile.name,
+                        self.flat,
+                        self.purpose,
+                        self.date_time
+                    )
+        return ret_string
 
 
 # class ParkingSlot(models.Model):
@@ -52,37 +254,9 @@
 #         return self.slot_num
 
 
-# class Guest(models.Model):
-#     first_name = models.CharField(max_length=50)
-#     last_name = models.CharField(max_length=50)
-#     email = models.EmailField()
-#     guest_visit = models.ManyToManyField(GVisit)
-
-#     def __str__(self):
-#         return self.get_name()
-
-#      def get_name(self):
-#         return self.first_name + self.last_name
 
 
 # ''' Vehicle Models '''
-
-# class Vehicle(models.Model):
-#     license_plate = models.CharField(max_length=10)
-
-#     def __str__(self):
-#         return self.slot_num
-
-#     # add get_name
-
-
-# class ResidentVehicle(models.Model):
-#     vehicle = models.OneToOne(Vehicle, on_delete=models.CASCADE)
-#     model = models.CharField(max_length=100)
-#     resident = models.ForeignKey(Resident, on_delete=models.CASCADE)
-
-#     def __str__(self):
-#         return self.slot_num
 
 
 # class GuestVehicle(Vehicle):
@@ -104,24 +278,6 @@
 # ''' Visit Models '''
 
 
-# class Visit(models.Model):
-#     purpose = models.CharField(max_length=100)
-
-#     class Meta:
-#         abstract = True
-
-#     def __str__(self):
-#         return self.slot_num
-
-
-# class GuestVisit(Visit):
-#     guest = models.ForeignKey(Guest, on_delete=models.CASCADE)
-#     flat = models.ForeignKey(Flat, on_delete=models.CASCADE)
-
-#     def __str__(self):
-#         return self.guest.get_name() + ":" + self.purpose 
-
-
 # class ServiceVisit(Visit):
 
 #     def __str__(self):
@@ -131,17 +287,6 @@
 # ''' Transaction Models '''
 
 
-# class Transaction(models.Model):
-#     date_time = models.DateTimeField(auto_now_add=True)
-#     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
-#     is_entry = models.BooleanField(default=True) # Categorize whether 
-
-#     def __str__(self):
-#         return vehicle + ":" + date_time
-
-
-# class ResidentTransaction(models.Model):
-#     pass
 
 
 # class GuestTransaction(models.Model):
