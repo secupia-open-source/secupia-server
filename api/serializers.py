@@ -98,10 +98,11 @@ class ResidentSerializer(serializers.ModelSerializer):
 class ResidentVehicleSerializer(serializers.ModelSerializer):
     '''Resident Vehicle Serializer class'''
     license_plate = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
     
     class Meta:
         model = models.ResidentVehicle
-        fields = ('id', 'license_plate', 'model', 'manufacturer')
+        fields = ('id', 'license_plate', 'model', 'manufacturer', 'status')
 
     def get_owner(self, obj):
         '''Return serialized flat data'''
@@ -111,6 +112,9 @@ class ResidentVehicleSerializer(serializers.ModelSerializer):
         '''Return serialized flat data'''
         return obj.vehicle.license_plate
 
+    def get_status(self, obj):
+        '''Return serialized flat data'''
+        return "In"
 
 class ResidentVehicleLogSerializer(serializers.ModelSerializer):
     '''Resident Vehicle Log Serializer class'''
