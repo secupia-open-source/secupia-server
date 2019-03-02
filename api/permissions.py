@@ -1,13 +1,15 @@
 from rest_framework import status
 from rest_framework.permissions import BasePermission
 
-from api.models import UserProfile
+from api.models import Flat
 
-class IsResident(BasePermission):
+class IsFlat(BasePermission):
 
-	def has_permission(self, request, view):
-		profile = request.user.profile
-		if profile.is_resident:
-			return True
-		else:
-			return False
+    def has_permission(self, request, view):
+        try:
+            flat = request.user.flat
+            if flat is None:
+                raise Flat.DoesNotExist
+            return True
+        except Flat.DoesNotExist:
+            return False

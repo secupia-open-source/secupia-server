@@ -5,74 +5,12 @@ from django.db import models
 
 from api import managers
 
-class UserProfile(models.Model):
-    '''User Profile model class'''
-    MALE = 'M'
-    FEMALE = 'F'
-    OTHERS = 'O'
-
-    GENDER = (
-        (MALE, "Male"),
-        (FEMALE, "Female"),
-        (OTHERS, "Others"),
-    )
-
-    user = models.OneToOneField(User, null=True, blank=True, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100)
-    email = models.EmailField(null=True, blank=True)
-    gender = models.CharField(max_length=1, choices=GENDER, null=True)
-    contact = models.PositiveIntegerField()
-    dob = models.DateField(null=True, blank=True)
-    occupation = models.CharField(max_length=100, null=True, blank=True)
-    profile_pic = models.ImageField(null=True, blank=True)
-    license_num = models.CharField(max_length=10, null=True, blank=True)
-    registration_token = models.CharField(max_length=100, null=True, blank=True)
-
-    class Meta:
-        verbose_name = "User Profile"
-        verbose_name_plural = "User Profiles"
-        default_related_name = "profile"
-
-    def __str__(self):
-        return "User: {}".format(self.name)
-
-    def __repr__(self):
-        ret_string = 'UserProfile(name="{}", gender="{}", contact={}'.format(
-                        self.name,
-                        self.gender,
-                        self.contact
-                    )
-        return ret_string
-
-    @property
-    def is_resident(self):
-        try:
-            resident = self.resident
-            if resident.id:
-                return True
-        except (AttributeError, UserProfile.resident.RelatedObjectDoesNotExist):
-            return False
-
-    def is_guest(self):
-        try:
-            guest = self.guest
-            if guest.id:
-                return True
-        except (AttributeError, UserProfile.resident.RelatedObjectDoesNotExist):
-            return False
-
-    @property
-    def owns_flats(self):
-        flats = self.flats.all()
-        if flats.exists():
-            return True
-        else:
-            return False
-
 
 class Society(models.Model):
     '''Society model class'''
     name = models.CharField(max_length=100)
+
+    # flats: Flat
 
     class Meta:
         verbose_name_plural = "Societies"
@@ -87,50 +25,114 @@ class Society(models.Model):
 
 class Flat(models.Model):
     '''Flat model class'''
-    flat = models.CharField(max_length=10)
+    user = models.OneToOneField(User, related_name='flat', 
+        on_delete=models.CASCADE) # User for owner and resident
+    name = models.CharField(max_length=10)
     society = models.ForeignKey(Society, on_delete=models.CASCADE)
-    owner = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True)
+    owner = models.ForeignKey('Owner', on_delete=models.SET_NULL, null=True, blank=True)
+    landline = models.PositiveIntegerField(default=None, null=True)
+
+    # guests: Guest
+    # registration_tokens: RegistrationToken
+    # parking_slot: ParkingSlot
 
     class Meta:
         default_related_name = "flats"
 
     def __str__(self):
-        return "{}, Flat: {}".format(self.society, self.flat)
+        return "Flat: {}, {}".format(self.society, self.name)
 
     def __repr__(self):
-        ret_string = 'Flat(flat="{}", society="{}", owner="{}")'.format(
-                        self.flat,
-                        self.society,
-                        self.owner
+        ret_string = 'Flat(flat="{}", society="{}")'.format(
+                        self.name,
+                        self.society
                     )
         return ret_string
 
-    def add_guest_visit(self, guest_data, visit_data):
-        profile, _ = UserProfile.objects.get_or_create(**guest_data)
-        guest, _ = Guest.objects.get_or_create(profile=profile)
+    def get_address(self):
+        return "{}: {}".format(self.name, self.society)
 
-        visit_data['guest'] = guest
-        visit_data['flat'] = self
+    def get_active_guests(self):
+        return self.guests.filter(is_active=True)
 
-        guest_visit = GuestVisit.objects.create(**visit_data)
-        return guest_visit.id
+    def add_guest(self, val_data):
+        val_data['flat'] = self
+        guest = Guest.objects.create(**val_data)
+        return guest.id
+
+    def get_vehicles(self):
+        vehicles = []
+        for resident in self.residents.all():
+            vehicles.extend(resident.vehicles.all())
+        return vehicles
 
 
-class Resident(models.Model):
-    '''Resident model class'''
-    profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
-    flat = models.ForeignKey(Flat, on_delete=models.CASCADE)
+class UserProfile(models.Model):
+    '''User Profile model class'''
+    MALE = 'M'
+    FEMALE = 'F'
+    OTHERS = 'O'
+
+    GENDER = (
+        (MALE, "Male"),
+        (FEMALE, "Female"),
+        (OTHERS, "Others"),
+    )
+
+    name = models.CharField(max_length=100)
+    gender = models.CharField(max_length=1, choices=GENDER, null=True)
+    contact = models.PositiveIntegerField()
 
     class Meta:
-        default_related_name = "resident"
+        abstract = True
+
+
+class Owner(UserProfile):
+    '''Owner model class'''
+    email = models.EmailField()
+    dob = models.DateField()
+    occupation = models.CharField(max_length=100, null=True)
+    profile_pic = models.ImageField(null=True, blank=True)
+    license_num = models.CharField(max_length=10, null=True)
+
+    # flats: Flat
 
     def __str__(self):
-        return "Resident: {}".format(self.profile.name)
+        ret_string = "Owner: {}, Flats: ".format(self.name)
+        for flat in self.flats.all():
+            ret_string += flat.get_address() + ", "
+        return ret_string
 
     def __repr__(self):
-        ret_string = 'Resident(user="{}", flat="{}")'.format(
+        ret_string = 'Owner(user="{}", flat="{}")'.format(
                         self.profile,
                         self.flat
+                    )
+        return ret_string
+
+
+class Resident(UserProfile):
+    '''Resident model class'''
+    flat = models.ForeignKey(Flat, on_delete=models.CASCADE)
+    email = models.EmailField()
+    dob = models.DateField()
+    occupation = models.CharField(max_length=100, null=True)
+    profile_pic = models.ImageField(null=True, blank=True)
+    license_num = models.CharField(max_length=10, null=True, blank=True)
+
+    class Meta:
+        default_related_name = "residents"
+
+    def __str__(self):
+        return "Resident: {}".format(self.name)
+
+    def __repr__(self):
+        ret_string = 'Resident(name="{}", flat="{}")'.format(
+                        self.name,
+                        # self.gender,
+                        # self.contact,
+                        # self.email,
+                        self.flat.name
                     )
         return ret_string
 
@@ -141,6 +143,59 @@ class Resident(models.Model):
         return "{}, {}".format(self.flat.flat, self.flat.society.name)
 
 
+class Guest(UserProfile):
+    '''Guest model class'''
+    flat = models.ForeignKey(Flat, on_delete=models.CASCADE)
+    purpose = models.TextField()
+    expected_date_time = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    is_by_guard = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        default_related_name = "guests"
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        ret_string = 'Guest(name={}, flat={}, purpose={}, is_active={}, is_by_guard={})'.format(
+                        self.name
+                    )
+        return ret_string
+
+    def get_name(self):
+        return self.name
+
+    def add_entry_trasaction(self):
+        pass
+
+    def add_exit_trasaction(self):
+        pass
+
+
+class ParkingSlot(models.Model):
+    name = models.CharField(max_length=10)
+    is_guest = models.BooleanField(default=False)
+
+    # flat: Flat
+
+    def __str__(self):
+        ret_string = "{}: ".format(self.name)
+        if self.is_guest:
+            ret_string += ": Guest"
+        else:
+            ret_string += ": {}".format(self.flat)
+        return ret_string
+
+    def __repr__(self):
+        ret_string = 'ParkingSlot(name={}, is_guest={})'.format(
+                        self.name,
+                        self.is_guest
+                    )
+        return ret_string
+
+
 class Vehicle(models.Model):
     '''Vehicle model class'''
     '''Development Notes:
@@ -149,10 +204,11 @@ class Vehicle(models.Model):
     license_plate = models.CharField(max_length=10, unique=True)
 
     def __str__(self):
-        return "Vehicle: {}".format(self.license_plate)
+        return "Vehicle {}".format(self.license_plate)
 
     def __repr__(self):
         ret_string = 'Vehicle(license_plate={})'.format(license_plate)
+        return ret_string
 
     @property
     def is_resident_vehicle(self):
@@ -163,23 +219,14 @@ class Vehicle(models.Model):
         except (AttributeError, Vehicle.resident_vehicle.RelatedObjectDoesNotExist):
             return False
 
-    # @property
-    # def is_guest_vehicle(self):
-    #     try:
-    #         guest_vehicle = self.guest_vehicle
-    #         if guest_vehicle.id:
-    #             return True
-    #     except (AttributeError, Vehicle.guest_vehicle.RelatedObjectDoesNotExist):
-    #         return False
-
-    # @property
-    # def is_service_vehicle(self):
-    #     try:
-    #         service_vehicle = self.service_vehicle
-    #         if service_vehicle.id:
-    #             return True
-    #     except (AttributeError, Vehicle.service_vehicle.RelatedObjectDoesNotExist):
-    #         return False
+    @property
+    def is_guest_vehicle(self):
+        try:
+            guest_vehicle = self.guest_vehicle
+            if guest_vehicle.id:
+                return True
+        except (AttributeError, Vehicle.guest_vehicle.RelatedObjectDoesNotExist):
+            return False
 
     def add_transaction(self, is_entry):
         transaction = Transaction.objects.create(vehicle=self, is_entry=is_entry)
@@ -214,7 +261,7 @@ class ResidentVehicle(models.Model):
                         self.model,
                         self.manufacturer
                     )
-
+        return ret_string
 
 class Transaction(models.Model):
     date_time = models.DateTimeField(auto_now_add=True)
@@ -233,24 +280,6 @@ class Transaction(models.Model):
                         self.date_time,
                         self.is_entry
                     )
-
-class Guest(models.Model):
-    '''Guest model class'''
-    profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
-
-    # objects = managers.GuestQuerySet.as_manager()
-
-    def __str__(self):
-        return self.get_name()
-
-    def __repr__(self):
-        ret_string = 'Guest(profile={})'.format(
-                        self.profile
-                    )
-        return ret_string
-
-    def get_name(self):
-        return self.profile.name
 
 
 class Visit(models.Model):
@@ -271,38 +300,23 @@ class Visit(models.Model):
         abstract = True
 
 
-class GuestVisit(Visit):
-    '''Guest Visit model class'''
-    guest = models.ForeignKey(Guest, on_delete=models.CASCADE)
+class RegistrationToken(models.Model):
+    '''Registration Token model class'''
     flat = models.ForeignKey(Flat, on_delete=models.CASCADE)
-
-    objects = managers.GuestVisitQuerySet.as_manager()
-
-    class Meta:
-        verbose_name = "Guest Visit"
-        default_related_name = "guest_visit"
+    registration_token = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
-        return "{}, Purpose: {}".format(self.guest.profile.name, self.purpose)
+        return "Registration token {} for {}".format(
+                self.registration_token[:10],
+                self.flat.__str__()
+            )
 
     def __repr__(self):
-        ret_string = 'GuestVisit(guest={}, flat={}, purpose="{}", date_time={})'.format(
-                        self.guest.profile.name,
-                        self.flat,
-                        self.purpose,
-                        self.date_time
+        ret_string = 'RegistrationToken(flat="{}", registration_token="{}")'.format(
+                        self.flat.address,
+                        self.registration_token[:10]
                     )
         return ret_string
-
-
-# class ParkingSlot(models.Model):
-#     slot_num = models.CharField(max_length=10)
-#     flat = models.OneToOneField('Flat', on_delete=models.CASCADE)
-#     is_guest = models.BooleanField(default=False)
-
-#     def __str__(self):
-#         return self.slot_num
-
 
 
 
