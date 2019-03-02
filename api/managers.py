@@ -6,23 +6,12 @@ from django.utils import timezone
 from api import models as api_models
 
 
-# class GuestQuerySet(models.QuerySet):
-#     def get_or_create(cls, **kwargs):
-#         '''Returns all active guests visits or
-#         active guest visits for a flat'''
-#         try:
-#             flat = kwargs['flat']
-#             return cls.filter(flat=flat, status=api_models.Visit.ACTIVE)
-#         except KeyError:
-#             return cls.filter(status=api_models.Visit.ACTIVE)
-
-
-class GuestVisitQuerySet(models.QuerySet):
-    def active_guest_visits(cls, **kwargs):
-        '''Returns all active guests visits or
-        active guest visits for a flat'''
-        try:
-            flat = kwargs['flat']
-            return cls.filter(flat=flat, status=api_models.Visit.ACTIVE)
-        except KeyError:
-            return cls.filter(status=api_models.Visit.ACTIVE)
+class GuestQuerySet(models.QuerySet):
+    def flats_expecting_guests(cls, **kwargs):
+        '''Returns all flats expecting guests'''
+        flats = []
+        for flat in cls.all():
+        	if count(flat.get_active_guests()) != 0:
+        		flats.append(flat)
+        		continue
+        return flats

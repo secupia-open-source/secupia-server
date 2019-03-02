@@ -148,9 +148,12 @@ class Guest(UserProfile):
     flat = models.ForeignKey(Flat, on_delete=models.CASCADE)
     purpose = models.TextField()
     expected_date_time = models.DateTimeField(null=True, blank=True)
+    expected_duration_of_stay = models.PositiveIntegerField(default=1)
     is_active = models.BooleanField(default=True)
     is_by_guard = models.BooleanField(default=False)
+    is_quick_service = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
+    vehicle = models.ForeignKey('GuestVehicle', null=True, on_delete=models.SET_NULL)
 
     class Meta:
         default_related_name = "guests"
@@ -167,11 +170,8 @@ class Guest(UserProfile):
     def get_name(self):
         return self.name
 
-    def add_entry_trasaction(self):
-        pass
-
-    def add_exit_trasaction(self):
-        pass
+    def set_vehicle(license_plate):
+        self.vehicle = GuestVehicle.objects.get(vehicle__license_plate=license_plate)
 
 
 class ParkingSlot(models.Model):
@@ -245,7 +245,7 @@ class ResidentVehicle(models.Model):
     owner = models.ForeignKey(Resident, related_name="vehicles", on_delete=models.CASCADE)
     model = models.CharField(max_length=100)
     manufacturer = models.CharField(max_length=100)
-    is_locked = models.BooleanField(default=True)
+    is_locked = models.BooleanField(default=True) # Smart Lock
 
     def __str__(self):
         return "{}, {}".format(self.owner, self.vehicle)
@@ -258,6 +258,19 @@ class ResidentVehicle(models.Model):
                         self.manufacturer
                     )
         return ret_string
+
+
+class GuestVehicle(models.Model):
+    '''Guest Vehicle model class'''
+    vehicle = models.OneToOneField(Vehicle, related_name="guest_vehicle", on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "Guest vehicle {}".format(self.vehicle)
+
+    def __repr__(self):
+        ret_string = 'GuestVehicle(vehicle={})'.format(self.vehicle)
+        return ret_string
+
 
 class Transaction(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -313,18 +326,6 @@ class RegistrationToken(models.Model):
                         self.registration_token[:10]
                     )
         return ret_string
-
-
-
-# ''' Vehicle Models '''
-
-
-# class GuestVehicle(Vehicle):
-#     vehicle = models.OneToOne(Vehicle, on_delete=models.CASCADE)
-#     guest = models.ForeignKey(Guest, on_delete=models.CASCADE)
-
-#     def __str__(self):
-#         return self.slot_num
 
 
 # class ServiceVehicle(Vehicle):

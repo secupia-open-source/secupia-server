@@ -8,21 +8,36 @@ urlpatterns = [
     # Login
     path(r'login', obtain_jwt_token, name="logout"),
 
-    # Resident Profile Endpoints
-    # path(r'vehicle/transactions', views.VehicleTransaction.as_view(), name="add_transaction"),
-    # path(r'registration-token', views.RegistrationToken.as_view(), name="add_reg_token"),
+    # Vehicle Endpoints
+    path(r'vehicle/transactions', views.VehicleTransaction.as_view(), name="transactions"),
     
-    # Resident Profile Endpoints
-    path(r'resident/profile', views.ResidentProfile.as_view(), name="resident_profile"),
+    # Flat Endpoints
+    # Vehicle Endpoints
+    path(r'flat/vehicles', views.FlatVehicles.as_view(), name="flat_vehicle"),
+    path(r'flat/vehicles/<int:vehicle_id>', views.FlatVehicleTransactions.as_view(), 
+        name="flat_transactions"),
+    path(r'flat/vehicles/<int:vehicle_id>/smart-lock', views.SmartLock.as_view(), name="smart_lock"),
+    # Guest Endpoint
+    path(r'flat/guests', views.FlatGuest.as_view(), name="flat_guest"),
+    # Notification Endpoint
+    path(r'flat/registration-token', views.RegistrationToken.as_view(), name="add_reg_token"),
+
+    # General Flat Endpoints
+    # Please change the name of these endpoints
+    path(r'flats/all', views.FlatView.as_view(), name="flats_all"),
+    path(r'flats/with-guests', views.FlatsWithGuestsView.as_view(), name="flats_expecting_guests"),
+    path(r'flats/<int:flat_id>/guests', views.GuestsInFlatView.as_view(), name="guests_in_flat"),
+
+    # Service Endpoints
+    # path(r'services/buses', views.ServiceBusView.as_view(), name="service_bus"),
+    # path(r'services/staff', views.ServiceStaffView.as_view(), name="service_staff"),
+
+    # Notice Endpoint
+    # path(r'notices', views.NoticeView.as_view(), name="notices"),
     
-    # Resident Vehile Endpoints
-    path(r'resident/vehicle/<int:vehicle_id>/logs', views.ResidentVehicleTransactions.as_view(), 
-        name="resident_logs"),
-    path(r'resident/smart-lock', views.SmartLock.as_view(), name="smart_lock"),
-    path(r'resident/guest', views.ResidentGuestVisit.as_view(), name="guest"),
+    # Complaint Endpoint
+    # path(r'complaints', views.ComplaintView.as_view(), name="complaints"),
+
+    # Contact Endpoint
+    # path(r'contacts', views.ContactView.as_view(), name="contacts"),
 ]
-
-
-# About endpoint
-# Contacts endpoint
-# 

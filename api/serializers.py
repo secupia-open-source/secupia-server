@@ -57,7 +57,7 @@ class ResidentVehicleSerializer(serializers.ModelSerializer):
         return self.get_status()
 
 
-class ResidentVehicleTransactionSerializer(serializers.ModelSerializer):
+class FlatVehicleTransactionSerializer(serializers.ModelSerializer):
     '''Resident Vehicle Log Serializer class'''
     
     is_entry = serializers.SerializerMethodField()
