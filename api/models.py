@@ -205,6 +205,8 @@ class Vehicle(models.Model):
     '''
     license_plate = models.CharField(max_length=13, unique=True)
 
+    objects = managers.VehicleQuerySet.as_manager()
+
     def __str__(self):
         return "Vehicle {}".format(self.license_plate)
 

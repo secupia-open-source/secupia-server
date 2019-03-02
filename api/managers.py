@@ -15,3 +15,13 @@ class FlatQuerySet(models.QuerySet):
         		flats.append(flat)
         		continue
         return flats
+
+
+class VehicleQuerySet(models.QuerySet):
+    def get_recent(cls, **kwargs):
+        '''Returns most recent transaction'''
+        transactions = api_models.Transaction.objects.all().order_by('-timestamp')
+        if transactions.exists():
+        	return transactions[0]
+        else:
+            return None

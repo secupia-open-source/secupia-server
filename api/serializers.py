@@ -12,7 +12,7 @@ class FlatSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Flat
-        fields = ('id', 'short_addr', 'addr')
+        fields = ('id', 'short_addr', 'addr', 'landline')
 
     def get_short_addr(self, obj):
         '''Return serialized society data'''

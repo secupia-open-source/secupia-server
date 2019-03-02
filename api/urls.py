@@ -10,6 +10,7 @@ urlpatterns = [
 
     # Vehicle Endpoints
     path(r'vehicle/transactions', views.VehicleTransaction.as_view(), name="transactions"),
+    path(r'vehicle/predict-license-plate', views.PredictLicensePlate.as_view(), name="predict_license_plate"),    
     
     # Flat Endpoints
     # Vehicle Endpoints

@@ -48,7 +48,7 @@ class VehicleTransaction(APIView):
         except ValueError:
             response_data = {'message': 'Invalid request'}
             status_code = status.HTTP_400_BAD_REQUEST
-            return Response(response_data, status_code)
+            return Response(response_data, status=status_code)
 
         vehicle, _ = Vehicle.objects.get_or_create(license_plate=license_plate)
         transaction = vehicle.add_transaction(is_entry)
@@ -59,7 +59,20 @@ class VehicleTransaction(APIView):
 
         response_data = {'message': 'Transaction added'}
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
+
+
+class PredictLicensePlate(APIView):
+
+    def get(self, request):
+        '''Return most recent detected license plate'''
+        transaction = Vehicle.objects.get_recent()
+
+        response_data = {
+            'license_plate': transaction.vehicle.license_plate
+        }
+        status_code = status.HTTP_200_OK
+        return Response(response_data, status=status_code)
 
 
 class FlatVehicles(APIView):
@@ -74,7 +87,7 @@ class FlatVehicles(APIView):
 
         response_data = serializer.data
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
 
 
 class FlatVehicleTransactions(APIView):
@@ -95,14 +108,14 @@ class FlatVehicleTransactions(APIView):
         if vehicle.resident_vehicle not in vehicles:
             response_data = {'message': "Invalid Request"}
             status_code = status.HTTP_400_BAD_REQUEST
-            return Response(response_data, status_code)
+            return Response(response_data, status=status_code)
 
         serializer = serializers.VehicleTransactionSerializer(
             vehicle.transactions, many=True)
 
         response_data = serializer.data
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
 
 
 class FlatGuest(APIView):
@@ -117,7 +130,7 @@ class FlatGuest(APIView):
 
         response_data = serializer.data
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
 
 
     def post(self, request):
@@ -132,7 +145,7 @@ class FlatGuest(APIView):
         except ValueError:
             response_data = {'message': "Invalid request"}
             status_code = status.HTTP_400_BAD_REQUEST
-            return Response(response_data, status_code)
+            return Response(response_data, status=status_code)
 
         guest_id = flat.add_guest(val_data)
 
@@ -141,7 +154,7 @@ class FlatGuest(APIView):
             'id': guest_id
         }
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
 
     def patch(self, request):
         '''Update a guest expected by a flat'''
@@ -152,11 +165,11 @@ class FlatGuest(APIView):
         except Guest.DoesNotExist:
             response_data = {'message': "Guest does not exist"}
             status_code = status.HTTP_404_NOT_FOUND
-            return Response(response_data, status_code)
+            return Response(response_data, status=status_code)
         except ValueError:
             response_data = {'message': "Invalid format or fields may be missing"}
             status_code = status.HTTP_400_BAD_REQUEST
-            return Response(response_data, status_code)
+            return Response(response_data, status=status_code)
 
         guest.name = val_data['name']
         guest.contact = val_data['contact']
@@ -166,7 +179,7 @@ class FlatGuest(APIView):
 
         response_data = {'message': "Guest updated"}
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
 
 
     def delete(self, request):
@@ -176,14 +189,14 @@ class FlatGuest(APIView):
         except Guest.DoesNotExist:
             response_data = {'message': "Guest does not exist"}
             status_code = status.HTTP_404_NOT_FOUND
-            return Response(response_data, status_code)
+            return Response(response_data, status=status_code)
         
         guest.delete()
         # Override delete function to check if guest is active before deleting
 
         response_data = {'message': "Guest deleted"}
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
 
 
 class RegistrationToken(APIView):
@@ -200,7 +213,7 @@ class RegistrationToken(APIView):
 
         response_data = {'message': "Request Successful"}
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
 
 
 class SmartLockView(APIView):
@@ -221,7 +234,7 @@ class SmartLockView(APIView):
         if vehicle.resident_vehicle not in vehicles:
             response_data = {'message': "Invalid Request"}
             status_code = status.HTTP_400_BAD_REQUEST
-            return Response(response_data, status_code)
+            return Response(response_data, status=status_code)
 
         # Update vehicle's smart lock
         vehicle.is_locked = not(vehicle.is_locked)
@@ -229,7 +242,7 @@ class SmartLockView(APIView):
 
         response_data = {'message': "Request Successful"}
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
 
 
 class FlatView(APIView):
@@ -246,12 +259,12 @@ class FlatView(APIView):
         
         response_data = serializer.data
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
 
 
 class FlatsExpectingGuestsView(APIView): # Give better Name
 
-    # permission_classes = (IsAuthenticated,) # Thank Nishant
+    # permission_classes = (IsAuthenticated,) # Thank Nishant (sarcasm)
 
     def get(self, request):
         '''Return list of flats which are expecting guests'''
@@ -260,7 +273,7 @@ class FlatsExpectingGuestsView(APIView): # Give better Name
         
         response_data = serializer.data
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
 
 
 class GuestsForFlatView(APIView): # Please, give better name
@@ -275,7 +288,7 @@ class GuestsForFlatView(APIView): # Please, give better name
         
         response_data = serializer.data
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
 
     def patch(self, request, flat_id):
         '''Update vehicle for an expected guest'''
@@ -289,14 +302,14 @@ class GuestsForFlatView(APIView): # Please, give better name
         except ValueError:
             response_data = {'message': "Invalid request"}
             status_code = status.HTTP_400_BAD_REQUEST
-            return Response(response_data, status_code)
+            return Response(response_data, status=status_code)
             
         # Check if current guest is an active guest of current flat
         guest = Guest.objects.get(id=val_data['guest_id'])
         if guest not in guests:
             response_data = {'message': "Invalid request"}
             status_code = status.HTTP_404_NOT_FOUND
-            return Response(response_data, status_code)
+            return Response(response_data, status=status_code)
 
         # Update guest's vehicle
         guest.set_vehicle(val_data['license_num'])
@@ -304,7 +317,7 @@ class GuestsForFlatView(APIView): # Please, give better name
 
         response_data = {'message': "Request successful"}
         status_code = status.HTTP_200_OK
-        return Response(response_data, status_code)
+        return Response(response_data, status=status_code)
 
 
 

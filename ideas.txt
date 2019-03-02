@@ -1,0 +1,14 @@
+Guard:
+Tell guard when is a good time to go and eat
+Alert the guard that a heavy load is expected in the next few minutes
+
+
+Others:
+Alert emergency contacts if there is a major deviation from normal travel records of resident
+Quick service: If a courier service guy goes in, then he should come out within a stipulated period of time
+Deviation in guard behaviour can be reported to admin
+
+Resident:
+Advice on friend to invite while filling the visitor form
+Send people notification/ads when they are most likely to open the app
+Suspicion alert
