@@ -231,17 +231,12 @@ class Vehicle(models.Model):
     def add_transaction(self, is_entry):
         transaction = Transaction.objects.create(vehicle=self, is_entry=is_entry)
 
-        # if self.is_resident:
-            # self.send_notification(transa)
-
-
-    def send_notification(self, transaction):
-        if not isinstance(transaction, Transaction):
-            raise ValueError
-
-        if self.is_resident_vehicle:
-            resident = self.resident_vehicle.owner
-            sendNotification(resident.registration_token, transaction)
+    def get_status(self):
+        latest_tranasction = self.transactions.all().order_by('-timestamp')[0]
+        if latest_tranasction.is_entry:
+            return 'In'
+        else:
+            return 'Out'
 
 
 class ResidentVehicle(models.Model):
@@ -250,6 +245,7 @@ class ResidentVehicle(models.Model):
     owner = models.ForeignKey(Resident, related_name="vehicles", on_delete=models.CASCADE)
     model = models.CharField(max_length=100)
     manufacturer = models.CharField(max_length=100)
+    is_locked = models.BooleanField(default=True)
 
     def __str__(self):
         return "{}, {}".format(self.owner, self.vehicle)
@@ -264,7 +260,7 @@ class ResidentVehicle(models.Model):
         return ret_string
 
 class Transaction(models.Model):
-    date_time = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
     vehicle = models.ForeignKey(Vehicle, related_name="transactions", on_delete=models.CASCADE)
     is_entry = models.BooleanField(default=True)
 

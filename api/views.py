@@ -140,6 +140,13 @@ class ResidentVehicleTransactions(APIView):
         return Response(response_data, status_code)
 
 
+class SmartLock(APIView):
+
+    permission_classes = (IsAuthenticated, IsFlat)
+
+    def get(self, request):
+        pass
+
 # class VehicleTransaction(APIView):
 
 #     permission_classes = (IsAuthenticated,)

@@ -8,11 +8,8 @@ data/
 ### FILES:
 *.pyc
 *_ignore*
-*.sqlite3
 *.log
 *.save
 .~*
 .env
-ssms/config.py
 **.DS_Store
-migrations/

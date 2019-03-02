@@ -18,8 +18,7 @@ urlpatterns = [
     # Resident Vehile Endpoints
     path(r'resident/vehicle/<int:vehicle_id>/logs', views.ResidentVehicleTransactions.as_view(), 
         name="resident_logs"),
-
-    # Guest Endpoints
+    path(r'resident/smart-lock', views.SmartLock.as_view(), name="smart_lock"),
     path(r'resident/guest', views.ResidentGuestVisit.as_view(), name="guest"),
 ]
 
