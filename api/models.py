@@ -36,6 +36,8 @@ class Flat(models.Model):
     # registration_tokens: RegistrationToken
     # parking_slot: ParkingSlot
 
+    objects = managers.FlatQuerySet.as_manager()
+
     class Meta:
         default_related_name = "flats"
 
@@ -201,7 +203,7 @@ class Vehicle(models.Model):
     '''Development Notes:
     Split license_plate into factors
     '''
-    license_plate = models.CharField(max_length=10, unique=True)
+    license_plate = models.CharField(max_length=13, unique=True)
 
     def __str__(self):
         return "Vehicle {}".format(self.license_plate)
@@ -230,13 +232,18 @@ class Vehicle(models.Model):
 
     def add_transaction(self, is_entry):
         transaction = Transaction.objects.create(vehicle=self, is_entry=is_entry)
+        return transaction
 
     def get_status(self):
-        latest_tranasction = self.transactions.all().order_by('-timestamp')[0]
-        if latest_tranasction.is_entry:
-            return 'In'
+        transactions = self.transactions.all().order_by('-timestamp')
+        if transactions.exists():
+            latest_tranasction = transactions[0]
+            if latest_tranasction.is_entry:
+                return 'In'
+            else:
+                return 'Out'
         else:
-            return 'Out'
+            return 'In'
 
 
 class ResidentVehicle(models.Model):
@@ -248,7 +255,8 @@ class ResidentVehicle(models.Model):
     is_locked = models.BooleanField(default=True) # Smart Lock
 
     def __str__(self):
-        return "{}, {}".format(self.owner, self.vehicle)
+        return 'Owner: {}, Vehicle: "{}", Model: {}, {}'.format(self.owner.name, self.vehicle.license_plate,
+            self.model, self.manufacturer)
 
     def __repr__(self):
         ret_string = 'ResidentVehicle(vehicle={}, owner={}, model="{}", manufacturer="{}")'.format(
@@ -313,6 +321,9 @@ class RegistrationToken(models.Model):
     '''Registration Token model class'''
     flat = models.ForeignKey(Flat, on_delete=models.CASCADE)
     registration_token = models.CharField(max_length=100, null=True, blank=True)
+
+    class Meta:
+        default_related_name = "registration_tokens"
 
     def __str__(self):
         return "Registration token {} for {}".format(

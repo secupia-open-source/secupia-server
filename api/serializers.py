@@ -7,27 +7,16 @@ from api import models
 
 class FlatSerializer(serializers.ModelSerializer):
     '''Flat Serializer class'''
-    name = serializers.SerializerMethodField()
-    contact = serializers.SerializerMethodField()
+    short_addr = serializers.SerializerMethodField()
     addr = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Flat
-        fields = ('id', 'name', 'contact', 'addr')
+        fields = ('id', 'short_addr', 'addr')
 
-    def get_name(self, obj):
-        '''Return address'''
-        if obj.owner is not None:
-            return obj.owner.name
-        else:
-            return "Something" # Remove later
-
-    def get_contact(self, obj):
-        '''Return address'''
-        if obj.owner is not None:
-            return obj.owner.contact
-        else:
-            return 9876543210 # Remove later
+    def get_short_addr(self, obj):
+        '''Return serialized society data'''
+        return obj.name
 
     def get_addr(self, obj):
         '''Return serialized society data'''
@@ -54,11 +43,11 @@ class ResidentVehicleSerializer(serializers.ModelSerializer):
 
     def get_status(self, obj):
         '''Return serialized flat data'''
-        return self.get_status()
+        return obj.vehicle.get_status()
 
 
-class FlatVehicleTransactionSerializer(serializers.ModelSerializer):
-    '''Resident Vehicle Log Serializer class'''
+class VehicleTransactionSerializer(serializers.ModelSerializer):
+    '''Vehicle transaction Serializer class'''
     
     is_entry = serializers.SerializerMethodField()
 
@@ -79,7 +68,8 @@ class GuestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Guest
-        fields = ('id', 'name', 'contact', 'flat', 'purpose', 'expected_date_time')
+        fields = ('id', 'name', 'contact', 'flat', 'purpose', 
+            'expected_date_time', 'expected_duration_of_stay')
 
     def get_flat(self, obj):
         '''Return flat address'''        

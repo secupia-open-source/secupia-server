@@ -8,37 +8,59 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api import serializers
-from api.models import Guest, Vehicle
+from api.models import Flat, Guest, Vehicle
 from api.permissions import IsFlat
 from api.utils import validate_vehicle_log_data, validate_guest_visit_data
 
 
-# class ResidentProfile(APIView):
-
-#     permission_classes = (IsAuthenticated, IsFlat)
-
-#     def get(self, request):
-#         '''Return list of vehicles registered for a flat'''
-#         flat = request.user.flat
-#         vehicles = flat.get_vehicles()
-
-#         flat_serializer = serializers.FlatSerializer(flat)
-#         vehicle_serializer = serializers.ResidentVehicleSerializer(vehicles, many=True)
-
-#         response_data = {
-#             "profile": flat_serializer.data,
-#             "vehicle": vehicle_serializer.data
-#         }
-#         status_code = status.HTTP_200_OK
-#         return Response(response_data, status_code)
-
-
 class VehicleTransaction(APIView):
 
-    permission_classes = (IsAuthenticated, IsFlat)
+    permission_classes = (IsAuthenticated,)
+
+    def sendNotification(self, registration_token, transaction):
+        title = "Car log"
+
+        if transaction.is_entry:
+            body = "Your vehicle {} has entered"
+        else:
+            body = "Your vehicle {} has exited"
+        body = body.format(transaction.vehicle.license_plate)
+
+        message = messaging.Message(
+            notification = messaging.Notification(
+                title = title,
+                body = body,
+            ),
+            token = registration_token,
+        )
+
+        try:
+            response = messaging.send(message)
+            print("Response: ", response)
+        except Exception as e:
+            print("Error: ", e)
 
     def post(self, request):
-        pass
+        '''Add vehicle transaction and send notification to resident'''
+        data = request.data
+        try:
+            license_plate, is_entry = validate_vehicle_log_data(data)
+        except ValueError:
+            response_data = {'message': 'Invalid request'}
+            status_code = status.HTTP_400_BAD_REQUEST
+            return Response(response_data, status_code)
+
+        vehicle, _ = Vehicle.objects.get_or_create(license_plate=license_plate)
+        transaction = vehicle.add_transaction(is_entry)
+
+        flat = request.user.flat
+        for reg_token in flat.registration_tokens.all():
+            self.sendNotification(reg_token, transaction)
+
+        response_data = {'message': 'Transaction added'}
+        status_code = status.HTTP_200_OK
+        return Response(response_data, status_code)
+
 
 class FlatVehicles(APIView):
 
@@ -75,7 +97,7 @@ class FlatVehicleTransactions(APIView):
             status_code = status.HTTP_400_BAD_REQUEST
             return Response(response_data, status_code)
 
-        serializer = serializers.FlatVehicleTransactionSerializer(
+        serializer = serializers.VehicleTransactionSerializer(
             vehicle.transactions, many=True)
 
         response_data = serializer.data
@@ -164,6 +186,52 @@ class FlatGuest(APIView):
         return Response(response_data, status_code)
 
 
+class RegistrationToken(APIView):
+
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        data = request.data
+        print(data)
+        registration_token = data['registration_token']
+        profile = request.user.profile
+        profile.registration_token = registration_token
+        profile.save()
+
+        response_data = {'message': "Request Successful"}
+        status_code = status.HTTP_200_OK
+        return Response(response_data, status_code)
+
+
+class SmartLockView(APIView):
+
+    permission_classes = (IsAuthenticated, IsFlat,)
+
+    def post(self, request):
+        '''Update smart lock of vehicle'''
+        flat = request.user.flat
+        
+        # Get all vehicles for current flat
+        vehicles = flat.get_vehicles()
+
+        # Get vehicle in request
+        vehicle = Vehicle.objects.get(id=vehicle_id)
+        
+        # Check if request vehicle belongs to current flat
+        if vehicle.resident_vehicle not in vehicles:
+            response_data = {'message': "Invalid Request"}
+            status_code = status.HTTP_400_BAD_REQUEST
+            return Response(response_data, status_code)
+
+        # Update vehicle's smart lock
+        vehicle.is_locked = not(vehicle.is_locked)
+        vehicle.save()
+
+        response_data = {'message': "Request Successful"}
+        status_code = status.HTTP_200_OK
+        return Response(response_data, status_code)
+
+
 class FlatView(APIView):
 
     # permission_classes = (IsAuthenticated,) # Thank Nishant
@@ -174,28 +242,28 @@ class FlatView(APIView):
         # flats = Flat.objects.filter(society=society)
         
         flats = Flat.objects.all()
-        serializer = FlatSerializer(flats, many=True)
+        serializer = serializers.FlatSerializer(flats, many=True)
         
         response_data = serializer.data
         status_code = status.HTTP_200_OK
         return Response(response_data, status_code)
 
 
-class FlatsExpectingGuests(APIView): # Give better Name
+class FlatsExpectingGuestsView(APIView): # Give better Name
 
     # permission_classes = (IsAuthenticated,) # Thank Nishant
 
     def get(self, request):
         '''Return list of flats which are expecting guests'''
         flats = Flat.objects.flats_expecting_guests()
-        serializer = FlatSerializer(flats, many=True)
+        serializer = serializers.FlatSerializer(flats, many=True)
         
         response_data = serializer.data
         status_code = status.HTTP_200_OK
         return Response(response_data, status_code)
 
 
-class GuestsForFlat(APIView): # Please, give better name
+class GuestsForFlatView(APIView): # Please, give better name
 
     # permission_classes = (IsAuthenticated,) # Thank Nishant
 
@@ -203,7 +271,7 @@ class GuestsForFlat(APIView): # Please, give better name
         '''Return list of expected guests for a flat'''
         flat = Flat.objects.get(id=flat_id)
         guests = flat.get_active_guests()
-        serializer = GuestSerializer(guests, many=True)
+        serializer = serializers.GuestSerializer(guests, many=True)
         
         response_data = serializer.data
         status_code = status.HTTP_200_OK
@@ -230,7 +298,7 @@ class GuestsForFlat(APIView): # Please, give better name
             status_code = status.HTTP_404_NOT_FOUND
             return Response(response_data, status_code)
 
-        # Update vehicle for guest
+        # Update guest's vehicle
         guest.set_vehicle(val_data['license_num'])
         guest.save()
 

@@ -16,7 +16,7 @@ urlpatterns = [
     path(r'flat/vehicles', views.FlatVehicles.as_view(), name="flat_vehicle"),
     path(r'flat/vehicles/<int:vehicle_id>', views.FlatVehicleTransactions.as_view(), 
         name="flat_transactions"),
-    path(r'flat/vehicles/<int:vehicle_id>/smart-lock', views.SmartLock.as_view(), name="smart_lock"),
+    path(r'flat/vehicles/<int:vehicle_id>/smart-lock', views.SmartLockView.as_view(), name="smart_lock"),
     # Guest Endpoint
     path(r'flat/guests', views.FlatGuest.as_view(), name="flat_guest"),
     # Notification Endpoint
@@ -25,8 +25,8 @@ urlpatterns = [
     # General Flat Endpoints
     # Please change the name of these endpoints
     path(r'flats/all', views.FlatView.as_view(), name="flats_all"),
-    path(r'flats/with-guests', views.FlatsWithGuestsView.as_view(), name="flats_expecting_guests"),
-    path(r'flats/<int:flat_id>/guests', views.GuestsInFlatView.as_view(), name="guests_in_flat"),
+    path(r'flats/with-guests', views.FlatsExpectingGuestsView.as_view(), name="flats_expecting_guests"),
+    path(r'flats/<int:flat_id>/guests', views.GuestsForFlatView.as_view(), name="guests_in_flat"),
 
     # Service Endpoints
     # path(r'services/buses', views.ServiceBusView.as_view(), name="service_bus"),
