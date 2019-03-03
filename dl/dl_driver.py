@@ -9,8 +9,8 @@ import sys
 import tesserocr
 from openalpr import Alpr
 
-from secutopia.settings import BASE_DIR
-
+#from secutopia.settings import BASE_DIR
+import secutopia.settings as settings
 # Absolute Video Path
 video_dir_rel_path = "dl/Videos"
 video_name = "video1.mp4"
@@ -40,13 +40,12 @@ cap = cv2.VideoCapture(video)
 # cap.get(7)
 
 # For smooth termination after video ends
-# frame_counter = 0
-# length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+frame_counter = 0
+length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-# while(frame_counter < length):
-while True:
+while(frame_counter < length):
     ret,frame = cap.read()
-    # frame_counter += 1
+    frame_counter += 1
     results = alpr.recognize_ndarray(frame)
 
     for plate in results['results']:
@@ -54,6 +53,7 @@ while True:
             newPlate = plate['plate']
             if newPlate is not licensePlate:
                 licensePlate = newPlate
+                print(licensePlate)
                 requests.post(url, data=json.dumps(licensePlate), headers=headers)
        
 alpr.unload()

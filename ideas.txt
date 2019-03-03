@@ -1,5 +1,6 @@
 Guard:
 Tell guard when is a good time to go and eat
+If vehicle commute is low on a certain day, guards can be given a holiday. 
 Alert the guard that a heavy load is expected in the next few minutes
 
 
@@ -12,3 +13,11 @@ Resident:
 Advice on friend to invite while filling the visitor form
 Send people notification/ads when they are most likely to open the app
 Suspicion alert
+Send notifications to users to recommend car pooling for those who leave around the same time.
+If resident hasn't left the society in quite some time, he/she and a close contact will be alerted (are you okay? Is vehicle fine etc?) 
+
+
+If a frequent illegal parker is identified at the gate, the security will be informed to check his movements.
+
+
+

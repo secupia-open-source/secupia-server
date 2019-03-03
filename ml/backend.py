@@ -8,21 +8,28 @@ import requests
 import json
 
 
-video = "../../Images/video1.mp4"
+video = "../../Images/vid1.mp4"
 
-# variables for request handling
-licensePlate = ""
-url = "http://192.168.43.33:8080/ml"
+# Destination URL
+base_url = "http://10.32.8.101:8080/api/"
+api_endpoint = "vehicle/transactions"
+url = base_url + api_endpoint
+
+# Request parameters
 headers = {'Content-Type':'application/json'}
 
+# Variables for request handling
+licensePlate = ""
+plates = []
 
-alpr = Alpr("in", "/etc/openalpr/openalpr.conf", "./openalpr/runtime_data")
+alpr = Alpr("in", "/usr/local/share/openalpr/config/openalpr.defaults.conf", "./openalpr/runtime_data")
 if not alpr.is_loaded():
     print("Error loading OpenALPR")
     sys.exit(1)
 
-# select top 20 results
-alpr.set_top_n(20)
+# select top 10 results
+alpr.set_top_n(10)
+alpr.set_default_region("in")
 
 cap = cv2.VideoCapture(video)
 # cap.get(7)
@@ -34,17 +41,21 @@ length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
 while(frame_counter < length):
     ret,frame = cap.read()
-    frame_counter += 1
+    frame_counter += 3
     results = alpr.recognize_ndarray(frame)
 
     for plate in results['results']:
-        if plate['matches_template']:
-            newPlate = plate['plate']
-            if newPlate is not licensePlate:
-                licensePlate = newPlate
-                # data = {'data': [{'key1':licensePlate}]}
-                print(licensePlate)
-                requests.post(url, data=json.dumps(licensePlate), headers=headers)
+        # if plate['matches_template']:
+        newPlate = plate['plate']
+        if newPlate != licensePlate:
+            licensePlate = newPlate
+            # data = {'data': [{'key1':licensePlate}]}
+            print(licensePlate)
+                # request_data = {
+                #     'license_plate': licensePlate,
+                #     'is_entry': False
+                # }
+                # requests.post(url, data=json.dumps(request_data), headers=headers)
 
         # if newPlate['matches_template']:
         #     if newPlate['plate'] is not licensePlate:
