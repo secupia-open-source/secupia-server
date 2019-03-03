@@ -14,12 +14,11 @@ for i in range(100):
     log.append(newTime)
 
 
-def outlier(log, value):
-    
+def outlier(logs, value): 
     hours = []
     minutes = []
     
-    for timeval in log:
+    for timeval in logs:
         time = timeval.strftime("%H:%M:%S")
         myhour, myminute, mysecond = time.split(':')
         hours.append(int(myhour) * 60)
@@ -28,20 +27,20 @@ def outlier(log, value):
     time_final = np.asarray(hours) + np.asarray(minutes)
 
     mytime = datetime.strptime(str(value),"%H:%M:%S")
-    
     myhour = mytime.hour
     myminute = mytime.minute
-    mysecond = mytime.second
+    # mysecond = mytime.second
    
-    new_val = int(myhour) * 60 + int(myminute)
+    newVal = int(myhour) * 60 + int(myminute)
     
-    time_mean = np.mean(np.asarray(time_final))
-    time_std = np.std(np.asarray(time_final))
+    meanTime = np.mean(np.asarray(time_final))
+    stdTime = np.std(np.asarray(time_final))
 
-    z_score = np.abs(new_val - time_mean) / time_std
-    print(z_score)
+    zscore = np.abs(newVal - meanTime) / stdTime
+    print(zscore)
 
-    if(z_score > 3):
+    # general threshold for use is 3
+    if(zscore > 3):
         return True
 
     return False
