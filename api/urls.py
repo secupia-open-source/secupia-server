@@ -29,6 +29,8 @@ urlpatterns = [
     path(r'flats/with-guests', views.FlatsExpectingGuestsView.as_view(), name="flats_expecting_guests"),
     path(r'flats/<int:flat_id>/guests', views.GuestsForFlatView.as_view(), name="guests_in_flat"),
 
+    # path(r'guard/registration-token', views.GuardRegistrationToken.as_view(), name="add_guard_reg_token"),
+
     # Service Endpoints
     # path(r'services/buses', views.ServiceBusView.as_view(), name="service_bus"),
     # path(r'services/staff', views.ServiceStaffView.as_view(), name="service_staff"),
