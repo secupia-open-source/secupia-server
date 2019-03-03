@@ -4,9 +4,10 @@ import tesserocr
 from openalpr import Alpr
 import sys
 import cv2
+import time
 
 
-video = "../../Images/video1.mp4"
+video = "../../Images/vid1.mp4"
 
 
 alpr = Alpr("in", "/etc/openalpr/openalpr.conf", "./openalpr/runtime_data")
@@ -22,6 +23,8 @@ cap = cv2.VideoCapture(video)
 # for smooth termination after video ends
 frame_counter = 0
 length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+start_time = time.time()
 
 while(frame_counter < length):
 
@@ -41,6 +44,7 @@ while(frame_counter < length):
                             prefix = "*"
                             print("  %s %12s%12f" % (prefix, candidate['plate'], candidate['confidence']))
 
-               
+
+print("--- %s seconds ---" % (time.time() - start_time))             
 alpr.unload()
 cap.release()
