@@ -68,6 +68,9 @@ class Flat(models.Model):
             vehicles.extend(resident.vehicles.all())
         return vehicles
 
+    def add_registration_token(self, reg_token):
+        RegistrationToken.objects.create(flat=self, registration_token=reg_token)
+
 
 class UserProfile(models.Model):
     '''User Profile model class'''
@@ -172,8 +175,10 @@ class Guest(UserProfile):
     def get_name(self):
         return self.name
 
-    def set_vehicle(license_plate):
-        self.vehicle = GuestVehicle.objects.get(vehicle__license_plate=license_plate)
+    def set_vehicle(self, license_plate):
+        vehicle = Vehicle.objects.get(license_plate=license_plate)
+        self.vehicle, _ = GuestVehicle.objects.get_or_create(vehicle=vehicle)
+        self.is_active = False
 
 
 class ParkingSlot(models.Model):
@@ -211,7 +216,7 @@ class Vehicle(models.Model):
         return "Vehicle {}".format(self.license_plate)
 
     def __repr__(self):
-        ret_string = 'Vehicle(license_plate={})'.format(license_plate)
+        ret_string = 'Vehicle(license_plate={})'.format(self.license_plate)
         return ret_string
 
     @property
@@ -289,16 +294,17 @@ class Transaction(models.Model):
 
     def __str__(self):
         if self.is_entry:
-            return "{}, date&time: {}, {}".format(self.vehicle, self.date_time, "Entry")
+            return "{}, date&time: {}, {}".format(self.vehicle, self.timestamp, "Entry")
         else:
-            return "{}, date&time: {}, {}".format(self.vehicle, self.date_time, "Exit")            
+            return "{}, date&time: {}, {}".format(self.vehicle, self.timestamp, "Exit")            
 
     def __repr__(self):
         ret_string = 'Transaction(vehicle={}, date_time={}, is_entry={})'.format(
                         self.vehicle,
-                        self.date_time,
+                        self.timestamp,
                         self.is_entry
                     )
+        return ret_string
 
 
 class Visit(models.Model):
@@ -335,10 +341,32 @@ class RegistrationToken(models.Model):
 
     def __repr__(self):
         ret_string = 'RegistrationToken(flat="{}", registration_token="{}")'.format(
-                        self.flat.address,
+                        self.flat.get_address(),
                         self.registration_token[:10]
                     )
         return ret_string
+
+
+# class Guard(models.Model):
+#     user = models.OneToOneField(User, related_name='guard', 
+#         on_delete=models.CASCADE)
+
+#     def add_registration_token(self, reg_token):
+#         GuardRegistrationToken.objects.create(guard=self, registration_token=reg_token)
+
+
+# class GuardRegistrationToken(models.Model):
+#     '''Registration Token model class'''
+#     guard = models.ForeignKey(Guard, on_delete=models.CASCADE)
+#     registration_token = models.CharField(max_length=100, null=True, blank=True)
+
+#     class Meta:
+#         default_related_name = "registration_tokens"
+
+#     def __str__(self):
+#         return "Registration token {}".format(
+#                 self.registration_token[:10],
+#             )
 
 
 # class ServiceVehicle(Vehicle):

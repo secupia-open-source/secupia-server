@@ -10,16 +10,16 @@ from rest_framework.views import APIView
 from api import serializers
 from api.models import Flat, Guest, Vehicle
 from api.permissions import IsFlat
-from api.utils import validate_vehicle_log_data, validate_guest_visit_data
+from api.utils import validate_vehicle_log_data, validate_guest_visit_data,  validate_update_vehicle_data
 
 
 class VehicleTransaction(APIView):
 
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
 
     def sendNotification(self, registration_token, transaction):
         title = "Car log"
-
+        
         if transaction.is_entry:
             body = "Your vehicle {} has entered"
         else:
@@ -31,7 +31,7 @@ class VehicleTransaction(APIView):
                 title = title,
                 body = body,
             ),
-            token = registration_token,
+            token = registration_token.registration_token,
         )
 
         try:
@@ -53,9 +53,10 @@ class VehicleTransaction(APIView):
         vehicle, _ = Vehicle.objects.get_or_create(license_plate=license_plate)
         transaction = vehicle.add_transaction(is_entry)
 
-        flat = request.user.flat
-        for reg_token in flat.registration_tokens.all():
-            self.sendNotification(reg_token, transaction)
+        if vehicle.is_resident_vehicle:
+            flat = vehicle.resident_vehicle.owner.flat
+            for reg_token in flat.registration_tokens.all():
+                self.sendNotification(reg_token, transaction)
 
         response_data = {'message': 'Transaction added'}
         status_code = status.HTTP_200_OK
@@ -205,16 +206,40 @@ class RegistrationToken(APIView):
 
     def post(self, request):
         data = request.data
-        print(data)
-        registration_token = data['registration_token']
-        profile = request.user.profile
-        profile.registration_token = registration_token
-        profile.save()
+        try:
+            registration_token = data['registration_token']
+        except KeyError:
+            response_data = {'message': "Invalid request"}
+            status_code = status.HTTP_400_BAD_REQUEST
+            return Response(response_data, status=status_code)
+        flat = request.user.flat
+        flat.add_registration_token(registration_token)
+        flat.save()
 
         response_data = {'message': "Request Successful"}
         status_code = status.HTTP_200_OK
         return Response(response_data, status=status_code)
 
+
+# class GuardRegistrationToken(APIView):
+
+#     permission_classes = (IsAuthenticated,)
+
+#     def post(self, request):
+#         data = request.data
+#         try:
+#             registration_token = data['registration_token']
+#         except KeyError:
+#             response_data = {'message': "Invalid request"}
+#             status_code = status.HTTP_400_BAD_REQUEST
+#             return Response(response_data, status=status_code)
+#         guard = request.user.guard
+#         guard.add_registration_token(registration_token)
+#         guard.save()
+
+#         response_data = {'message': "Request Successful"}
+#         status_code = status.HTTP_200_OK
+#         return Response(response_data, status=status_code)
 
 class SmartLockView(APIView):
 
@@ -237,8 +262,9 @@ class SmartLockView(APIView):
             return Response(response_data, status=status_code)
 
         # Update vehicle's smart lock
-        vehicle.is_locked = not(vehicle.is_locked)
-        vehicle.save()
+        guest_vehicle = vehicle.guest_vehicle
+        guest_vehicle.is_locked = not(vehicle.is_locked)
+        guest_vehicle.save()
 
         response_data = {'message': "Request Successful"}
         status_code = status.HTTP_200_OK
@@ -298,7 +324,7 @@ class GuestsForFlatView(APIView): # Please, give better name
 
         # Get current guest
         try:
-            val_data = validate_guard_guest_data(request.data)
+            val_data = validate_update_vehicle_data(request.data)
         except ValueError:
             response_data = {'message': "Invalid request"}
             status_code = status.HTTP_400_BAD_REQUEST
@@ -312,7 +338,7 @@ class GuestsForFlatView(APIView): # Please, give better name
             return Response(response_data, status=status_code)
 
         # Update guest's vehicle
-        guest.set_vehicle(val_data['license_num'])
+        guest.set_vehicle(val_data['license_plate'])
         guest.save()
 
         response_data = {'message': "Request successful"}

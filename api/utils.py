@@ -18,3 +18,12 @@ def validate_guest_visit_data(data):
     except KeyError:
         raise ValueError('Fields missing')
     return data
+
+def validate_update_vehicle_data(data):
+    '''Return validated data to update guest's vehicle'''
+    try:
+        name = data['license_plate']
+        contact = int(data['guest_id'])
+    except KeyError:
+        raise ValueError('Fields missing')
+    return data

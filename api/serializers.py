@@ -25,6 +25,7 @@ class FlatSerializer(serializers.ModelSerializer):
 
 class ResidentVehicleSerializer(serializers.ModelSerializer):
     '''Resident Vehicle Serializer class'''
+    id = serializers.SerializerMethodField()
     license_plate = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     
@@ -32,6 +33,10 @@ class ResidentVehicleSerializer(serializers.ModelSerializer):
         model = models.ResidentVehicle
         fields = ('id', 'license_plate', 'model', 'manufacturer', 
             'status', 'is_locked')
+
+    def get_id(self, obj):
+        '''Return serialized flat data'''
+        return obj.vehicle.id
 
     def get_owner(self, obj):
         '''Return serialized flat data'''
@@ -53,7 +58,7 @@ class VehicleTransactionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Transaction
-        fields = ('id', 'vehicle', 'date_time', 'is_entry')
+        fields = ('id', 'vehicle', 'timestamp', 'is_entry')
 
     def is_entry(self, obj):
         if obj.is_entry:
