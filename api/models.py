@@ -178,6 +178,7 @@ class Guest(UserProfile):
     def set_vehicle(self, license_plate):
         vehicle = Vehicle.objects.get(license_plate=license_plate)
         self.vehicle, _ = GuestVehicle.objects.get_or_create(vehicle=vehicle)
+        self.is_active = False
 
 
 class ParkingSlot(models.Model):
