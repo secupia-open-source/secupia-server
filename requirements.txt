@@ -5,7 +5,7 @@ djangorestframework==3.9.1
 djangorestframework-jwt==1.11.0
 Pillow==5.4.1
 psycopg2==2.7.7
-PyJWT==1.7.1
+PyJWT==2.4.0
 python-decouple==3.1
 pytz==2018.9
 six==1.12.0
